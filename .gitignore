@@ -9,4 +9,5 @@ notebooks
 /results
 /splits/task_1_tumor_vs_normal_100
 
+/dataset_ccrcc_uni2/**
 !/dataset_ccrcc_uni2/*.csv

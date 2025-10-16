@@ -38,7 +38,7 @@ encoder_arguments:
   target_img_size: 256 # resize images to this size before feeding to encoder
 model_arguments: 
   # arguments for initializing model from checkpoint
-  ckpt_path: /opt/CLAM/results/task1_ccrcc_1016_s1/s_0_checkpoint.pt
+  ckpt_path: /opt/CLAM/results/task1_ccrcc_uni2_1016_s1/s_0_checkpoint.pt
   model_type: clam_sb # see utils/eval_utils/
   initiate_fn: initiate_model # see utils/eval_utils/
   model_size: small
