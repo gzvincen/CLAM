@@ -1,3 +1,10 @@
 **/.DS_Store
 __pycache__/
 notebooks
+/.idea/**
+/dataset_ccrcc/**
+/heatmaps/heatmap_production_results*
+/heatmaps/heatmap_raw_results*
+/heatmaps/results
+/results
+/splits/task_1_tumor_vs_normal_100
