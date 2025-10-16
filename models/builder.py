@@ -5,6 +5,9 @@ from .timm_wrapper import TimmCNNEncoder
 import torch
 from utils.constants import MODEL2CONSTANTS
 from utils.transform_utils import get_eval_transforms
+from torchvision import transforms
+import logging
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def has_CONCH():
     HAS_CONCH = False
@@ -35,7 +38,64 @@ def has_UNI():
     except Exception as e:
         print(e)
     return HAS_UNI, UNI_CKPT_PATH
-        
+
+def has_UNI2():
+    HAS_UNI = False
+    UNI2_CKPT_PATH = ''
+    # check if UNI2_CKPT_PATH is set, catch exception if not
+    try:
+        # check if UNI2_CKPT_PATH is set
+        if 'UNI2_CKPT_PATH' not in os.environ:
+            raise ValueError('UNI2_CKPT_PATH not set')
+        HAS_UNI = True
+        UNI2_CKPT_PATH = os.environ['UNI2_CKPT_PATH']
+    except Exception as e:
+        print(e)
+    return HAS_UNI, UNI2_CKPT_PATH
+
+def get_norm_constants(which_img_norm: str = 'imagenet'):
+    constants_zoo = {
+        'imagenet': {'mean': (0.485, 0.456, 0.406), 'std': (0.229, 0.224, 0.225)},
+        'ctranspath': {'mean': (0.485, 0.456, 0.406), 'std': (0.229, 0.224, 0.225)},
+        'openai_clip':{'mean': (0.48145466, 0.4578275, 0.40821073), 'std': (0.26862954, 0.26130258, 0.27577711)},
+        'uniform': {'mean': (0.5, 0.5, 0.5), 'std': (0.5, 0.5, 0.5)}
+    }
+    constants = constants_zoo[which_img_norm]
+    return constants.get('mean'), constants.get('std')
+
+def get_eval_transforms_for_uni2(
+        which_img_norm: str = 'imagenet',
+        img_resize: int = 224,
+        center_crop: bool = False
+):
+    r"""
+    Gets the image transformation for normalizing images before feature extraction.
+
+    Args:
+        - which_img_norm (str): transformation type
+
+    Return:
+        - eval_transform (torchvision.Transform): PyTorch transformation function for images.
+    """
+
+    eval_transform = []
+
+    if img_resize > 0:
+        eval_transform.append(transforms.Resize(img_resize))
+
+        if center_crop:
+            eval_transform.append(transforms.CenterCrop(img_resize))
+
+    mean, std = get_norm_constants(which_img_norm)
+
+    eval_transform.extend([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=mean, std=std)
+    ])
+
+    eval_transform = transforms.Compose(eval_transform)
+    return eval_transform
+
 def get_encoder(model_name, target_img_size=224):
     print('loading model checkpoint')
     if model_name == 'resnet50_trunc':
@@ -48,6 +108,48 @@ def get_encoder(model_name, target_img_size=224):
                             num_classes=0, 
                             dynamic_img_size=True)
         model.load_state_dict(torch.load(UNI_CKPT_PATH, map_location="cpu"), strict=True)
+    elif model_name == 'uni_v2':
+        HAS_UNI, UNI2_CKPT_PATH = has_UNI2()
+        assert HAS_UNI, 'UNI2 is not available'
+        uni_kwargs = {
+            'model_name': 'vit_giant_patch14_224',
+            'img_size': 224,
+            'patch_size': 14,
+            'depth': 24,
+            'num_heads': 24,
+            'init_values': 1e-5,
+            'embed_dim': 1536,
+            'mlp_ratio': 2.66667 * 2,
+            'num_classes': 0,
+            'no_embed_class': True,
+            'mlp_layer': timm.layers.SwiGLUPacked,
+            'act_layer': torch.nn.SiLU,
+            'reg_tokens': 8,
+            'dynamic_img_size': True
+        }
+        model = timm.create_model(**uni_kwargs)
+        state_dict = torch.load(UNI2_CKPT_PATH, map_location="cpu")
+        missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=True)
+
+        which_img_norm = 'imagenet'
+        img_resize = 224
+        center_crop = True
+
+        eval_transform = get_eval_transforms_for_uni2(
+            which_img_norm=which_img_norm,
+            img_resize=img_resize,
+            center_crop=center_crop
+        )
+
+        logging.info(f'Missing Keys: {missing_keys}')
+        logging.info(f'Unexpected Keys: {unexpected_keys}')
+        logging.info(str(model))
+
+        # Send to GPU + turning on eval
+        # model.eval()
+        # model.to(device)
+        logging.info(f"Transform Type: {eval_transform}")
+        return model, eval_transform
     elif model_name == 'conch_v1':
         HAS_CONCH, CONCH_CKPT_PATH = has_CONCH()
         assert HAS_CONCH, 'CONCH is not available'

@@ -118,9 +118,9 @@ if __name__ == '__main__':
     print('patch_size: {} x {}, with {:.2f} overlap, step size is {} x {}'.format(patch_size[0], patch_size[1], patch_args.overlap, step_size[0], step_size[1]))
 
     preset = data_args.preset
-    def_seg_params = {'seg_level': -1, 'sthresh': 15, 'mthresh': 11, 'close': 2, 'use_otsu': False, 
+    def_seg_params = {'seg_level': -1, 'sthresh': 1, 'mthresh': 1, 'close': 4, 'use_otsu': True,
                       'keep_ids': 'none', 'exclude_ids':'none'}
-    def_filter_params = {'a_t':50.0, 'a_h': 8.0, 'max_n_holes':10}
+    def_filter_params = {'a_t':1, 'a_h': 1, 'max_n_holes': 1}
     def_vis_params = {'vis_level': -1, 'line_thickness': 250}
     def_patch_params = {'use_padding': True, 'contour_fn': 'four_pt'}
 
