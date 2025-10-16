@@ -33,7 +33,7 @@ def initiate_model(args, ckpt_path, device='cpu'):
 
     print_network(model)
 
-    ckpt = torch.load(ckpt_path)
+    ckpt = torch.load(ckpt_path, map_location=device)
     ckpt_clean = {}
     for key in ckpt.keys():
         if 'instance_loss_fn' in key:
@@ -46,7 +46,7 @@ def initiate_model(args, ckpt_path, device='cpu'):
     return model
 
 def eval(dataset, args, ckpt_path):
-    model = initiate_model(args, ckpt_path)
+    model = initiate_model(args, ckpt_path,  device)
     
     print('Init Loaders')
     loader = get_simple_loader(dataset)
