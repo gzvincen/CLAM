@@ -8,3 +8,5 @@ notebooks
 /heatmaps/results
 /results
 /splits/task_1_tumor_vs_normal_100
+
+!/dataset_ccrcc/*.csv
